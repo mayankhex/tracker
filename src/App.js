@@ -50,7 +50,6 @@ function App() {
     setError(null);
     
     try {
-      // Load tasks for selected date (without orderBy to avoid index requirement)
       const tasksCollection = collection(firestoreDb, 'tasks');
       const tasksQuery = query(
         tasksCollection, 
