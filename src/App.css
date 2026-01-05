@@ -3,26 +3,31 @@
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding: 40px 20px;
 }
 
 .container {
-  background: white;
   border-radius: 20px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  padding: 40px;
+  padding: 0 30px;
   max-width: 800px;
   width: 100%;
 }
 
 h1 {
-  color: #333;
-  margin-bottom: 30px;
+  color: #fffd;
+  text-shadow: 0 2px 2px #000, 0 4px 4px #000a, 0 6px 6px #0001;
+  margin: 20px;
   text-align: center;
-  font-size: 2.5rem;
+  font-size: 2rem;
+  font-family: 'sans-serif';
 }
 
 h2 {
+  color: #fffd;
+  margin-bottom: 1rem;
+}
+
+h3 {
   color: #555;
   margin-bottom: 20px;
   font-size: 1.5rem;
@@ -74,8 +79,11 @@ h2 {
 
 .input-section {
   display: flex;
-  gap: 10px;
-  margin-bottom: 30px;
+  background: white;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  gap: 5px;
+  margin-bottom: 3px;
 }
 
 .item-input {
@@ -159,13 +167,30 @@ h2 {
   background: #c82333;
 }
 
-.error-message {
-  background: #f8d7da;
-  color: #721c24;
-  padding: 15px;
+.cross-btn {
+  border: 0;
+  font-size: 14px;
+  background: transparent;
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  padding: 2px 3.5px;
+  border: 2px solid #f5c6cb;
   border-radius: 8px;
-  margin-bottom: 20px;
-  border: 1px solid #f5c6cb;
+}
+
+.floating-error {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 999;
+  max-width: 800px;
+  width: 100%;
+  padding: 20px;
+  background: #f8d7da;
+  border: 2px solid #f5c6cb;
+  border-radius: 8px;
+  color: #721c24;
 }
 
 .loading {
@@ -176,35 +201,13 @@ h2 {
 }
 
 .date-section {
+  display: flex;
+  justify-content: space-around;
   margin-bottom: 30px;
   padding: 20px;
   background: #f8f9fa;
   border-radius: 10px;
   border: 2px solid #e9ecef;
-}
-
-.date-label {
-  display: block;
-  font-weight: 600;
-  color: #555;
-  margin-bottom: 10px;
-  font-size: 14px;
-}
-
-.date-input {
-  padding: 12px;
-  border: 2px solid #ddd;
-  border-radius: 8px;
-  font-size: 16px;
-  width: 100%;
-  max-width: 160px;
-  margin-bottom: 10px;
-  transition: border-color 0.3s;
-}
-
-.date-input:focus {
-  outline: none;
-  border-color: #667eea;
 }
 
 .date-display {
@@ -215,7 +218,6 @@ h2 {
 }
 
 .tasks-section {
-  margin-top: 30px;
   margin-bottom: 30px;
 }
 
@@ -223,7 +225,6 @@ h2 {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-bottom: 20px;
 }
 
 .task-item {
@@ -276,8 +277,7 @@ h2 {
 }
 
 .summary-section {
-  margin-top: 30px;
-  padding: 20px;
+  /* padding: 20px; */
   background: #f8f9fa;
   border-radius: 10px;
   border: 2px solid #e9ecef;
@@ -291,7 +291,7 @@ h2 {
   font-size: 16px;
   font-family: inherit;
   resize: vertical;
-  margin-bottom: 15px;
+  /* margin-bottom: 15px; */
   transition: border-color 0.3s;
   min-height: 120px;
 }
@@ -307,6 +307,9 @@ h2 {
 }
 
 .empty-state {
+  background: whitesmoke;
+  border: 2px solid #e9ecef;
+  border-radius: 10px;
   text-align: center;
   padding: 40px;
   color: #6c757d;
@@ -342,10 +345,6 @@ h2 {
   
   .btn-delete {
     align-self: flex-end;
-  }
-
-  .date-input {
-    max-width: 100%;
   }
 }
 

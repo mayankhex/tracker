@@ -19,6 +19,8 @@ jobs:
         node-version: '24'
 
     - name: Install dependencies
+      env: 
+        REACT_APP_ENV: prod
       run: npm install
 
     - name: Build the React app

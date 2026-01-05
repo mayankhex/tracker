@@ -2,9 +2,13 @@ import { useEffect, useState } from 'react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 import { getTodayDateString } from '../utils';
+import { REACT_APP_ENV } from '../config/firebase';
+import { useConfig } from '../App';
 
 
-export default function DailySummary({ selectedDate, db, setError }) {
+export default function DailySummary() {
+	const { selectedDate, db, setError } = useConfig();
+
 	const [enable, setEnable] = useState(false);
 	const [dailySummary, setDailySummary] = useState('');
 
@@ -12,23 +16,22 @@ export default function DailySummary({ selectedDate, db, setError }) {
 	const saveSummary = async () => {
 		setError(null);
 		try {
-			const summaryDocRef = doc(db, 'env', process.env.NODE_ENV, 'dailySummaries', selectedDate);
+			const summaryDocRef = doc(db, 'env', REACT_APP_ENV, 'dailySummaries', selectedDate);
 			await setDoc(summaryDocRef, {
 				date: selectedDate,
 				summary: dailySummary.trim(),
-				updatedAt: getTodayDateString(1)
+				updatedAt: getTodayDateString()
 			}, { merge: true });
 			setEnable(false);
 		} catch (err) {
 			setError(err.message);
 			console.error('Error saving summary:', err);
-		} finally {
 		}
 	};
 
 	// Load summary for selected date
-	const loadSummary = async (firestoreDb = db) => {
-		if (!firestoreDb) {
+	const loadSummary = async () => {
+		if (!db) {
 			setError('Firebase not initialized. Please configure first.');
 			return;
 		}
@@ -37,7 +40,7 @@ export default function DailySummary({ selectedDate, db, setError }) {
 
 		try {
 			// Load summary for selected date
-			const summaryDocRef = doc(firestoreDb, 'env', process.env.NODE_ENV, 'dailySummaries', selectedDate);
+			const summaryDocRef = doc(db, 'env', REACT_APP_ENV, 'dailySummaries', selectedDate);
 			const summaryDoc = await getDoc(summaryDocRef);
 			if (summaryDoc.exists()) {
 				setDailySummary(summaryDoc.data().summary || '');
@@ -60,12 +63,13 @@ export default function DailySummary({ selectedDate, db, setError }) {
 	}
 
 	useEffect(()=>{
-		loadSummary(db);
-	}, [])
+		loadSummary();
+	}, [selectedDate])
 
 	return (
+		<>
+		<h2>Daily Summary</h2>
 		<div className="summary-section">
-			<h2>Daily Summary</h2>
 			<textarea
 				value={dailySummary}
 				onChange={handleSummaryUpdate}
@@ -81,5 +85,6 @@ export default function DailySummary({ selectedDate, db, setError }) {
 				Save Summary
 			</button>
 		</div>
+		</>
 	)
 }

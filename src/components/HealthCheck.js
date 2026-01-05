@@ -1,22 +1,25 @@
-import { useEffect, useState } from 'react';
-import { initFirebase, getFirebaseConfig } from '../config/firebase';
+import { useEffect, useState, useRef } from 'react';
+import { initFirebase } from '../config/firebase';
 import { collection, addDoc, getDoc, deleteDoc, doc, Timestamp } from 'firebase/firestore';
 import './HealthCheck.css';
+import { REACT_APP_ENV } from '../config/firebase';
+import { useConfig } from '../App';
 
 const healthCheckType = {
-  CONNECTION: 'connection',
+  CONFIG: 'config',
   WRITE: 'write',
   READ: 'read',
+  DELETE: 'delete'
 }
 
-export default function HealthCheck({ onSuccess }) {
+export default function HealthCheck() {
+  const { db, setDb, setShowHealthCheck } = useConfig();
+
+  const inputSecretRef = useRef(null);
+  const [error, setError] = useState(null);
   const [testing, setTesting] = useState(false);
   const [testResults, setTestResults] = useState([]);
-  const [error, setError] = useState(null);
-
-  // Check if .env config exists
-  const envConfig = getFirebaseConfig();
-  const hasEnvConfig = !!envConfig;
+  const [errorQuickFix, setErrorQuickFix] = useState(null);
 
   const addTestResult = (id, test, status, message) => {
     setTestResults(prev => {
@@ -30,10 +33,10 @@ export default function HealthCheck({ onSuccess }) {
     });
   };
 
-  const runConnectionTest = async (firestoreDb) => {
+  const runConnectionTest = async (db) => {
     // Test 1: Write to Firestore (quick test)
-    addTestResult(healthCheckType.WRITE, 'Testing Write', 'testing', 'Writing test document...');
-    const testCollection = collection(firestoreDb, 'healthCheck');
+    addTestResult(healthCheckType.WRITE, 'Write Test', 'testing', 'Writing test document...');
+    const testCollection = collection(db, 'healthCheck');
     const testDoc = await Promise.race([
       addDoc(testCollection, {
         timestamp: Timestamp.now(),
@@ -46,98 +49,149 @@ export default function HealthCheck({ onSuccess }) {
     addTestResult(healthCheckType.WRITE, 'Write Test', 'success', 'Write successful', true);
 
     // Test 2: Read from Firestore (quick test using getDoc)
-    addTestResult(healthCheckType.READ, 'Testing Read', 'testing', 'Reading test document...');
-    const testDocRef = doc(firestoreDb, 'env', process.env.NODE_ENV, '_connectionTest', testDoc.id);
+    const testDocRef = doc(db, 'healthCheck', testDoc.id);
+    addTestResult(healthCheckType.READ, 'Read Test', 'testing', 'Reading test document...', true);
     const docSnapshot = await Promise.race([
       getDoc(testDocRef),
-      new Promise((_, reject) =>
+      new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Read operation timed out')), 10000)
       )
     ]);
-
     if (docSnapshot.exists()) {
       addTestResult(healthCheckType.READ, 'Read Test', 'success', 'Read successful', true);
     } else {
-      throw new Error('Could not read the test document');
+      addTestResult(healthCheckType.READ, 'Read Test', 'error', 'Document not found', false);
+      throw new Error('Unable to read document');
     }
 
-    // Cleanup: Delete test document (non-blocking, don't wait for it)
-    deleteDoc(testDocRef).catch(() => {
-      // Ignore cleanup errors
-    });
+    // Cleanup
+    addTestResult(healthCheckType.DELETE, 'Delete Test', 'testing', 'Deleting test document...', true);
+    await Promise.race([
+      deleteDoc(testDocRef).catch(() => {
+        addTestResult(healthCheckType.DELETE, 'Delete Test', 'error', 'Delete failed', false);
+      }),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Delete operation timed out')), 10000)
+      )
+    ]);
+    addTestResult(healthCheckType.DELETE, 'Delete Test', 'success', 'Deleted successful', true);
 
     return true;
   };
 
-  const testConfiguration = async (firebaseConfig) => {
+  const runConfigValidation = async (secret) => {
     setTesting(true);
     setTestResults([]);
     setError(null);
 
     try {
-      // Test 1: Initialize Firebase (with timeout)
-      addTestResult(healthCheckType.CONNECTION, 'Initializing Firebase', 'testing', 'Connecting to Firebase...');
-      const initPromise = initFirebase(firebaseConfig);
+      // Initialize Firebase (with timeout)
+      addTestResult(healthCheckType.CONFIG, 'Verifying Firebase Config', 'testing', 'Connecting to Firebase...');
+      const initPromise = initFirebase(secret);
       const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Firebase initialization timed out')), 15000)
       );
+      const { db } =  await Promise.race([initPromise, timeoutPromise]);
+      addTestResult(healthCheckType.CONFIG, 'Verified Firebase Config', 'success', 'Firebase connected', true);
 
-      const { db: firestoreDb } = await Promise.race([initPromise, timeoutPromise]);
-      addTestResult(healthCheckType.CONNECTION, 'Initialized Firebase', 'success', 'Firebase connected', true);
-
-      // Test 2: Quick Firestore connection test
-      await runConnectionTest(firestoreDb);
-
-      // Return the db instance for the main app
-      return firestoreDb;
+      setDb(db);
+      await runConnectionTest(db);
+      // Launch immediately after success
+      setShowHealthCheck(false);
     } catch (err) {
+      // Cleanup session
+      sessionStorage.removeItem('scrt');
       console.error('Configuration check failed:', err);
 
-      let errorMessage = 'Configuration check failed. ';
+      let errorMessage = 'Error: ';
 
       if (err.code === 'permission-denied') {
-        errorMessage = 'Permission denied. Please check your Firestore security rules. ' +
-          'Update rules to allow read/write: rules_version = \'2\'; service cloud.firestore { match /databases/{database}/documents { match /{document=**} { allow read, write: if true; } } }';
+        errorMessage = 'Permission denied. Please check Firestore security rules.';
+        setErrorQuickFix('Update rules to allow read/write:- \n' +
+          'rules_version = \'2\'; \n' +
+          'service cloud.firestore { \n' + 
+          '\tmatch /databases/{database}/documents {\n' + 
+          '\t\t match /{document=**} {\n' + 
+          '\t\t\t allow read, write: if true;\n' + 
+          '\t\t}\n' + 
+          '\t}\n' + 
+          '}\n');
       } else if (err.code === 'unavailable') {
-        errorMessage = 'Firestore unavailable. Please ensure: 1) Firestore Database is enabled in Firebase Console, 2) Your network connection is working, 3) Firebase configuration is correct.';
+        errorMessage = 'Firestore unavailable.';
+        setErrorQuickFix('Please ensure: \n' +
+          '1) Firestore Database is enabled in Firebase Console, \n' +
+          '2) Your network connection is working, \n' +
+          '3) Firebase configuration is correct.'
+        );
       } else if (err.code === 'invalid-argument' || err.message?.includes('API key')) {
-        errorMessage = 'Invalid Firebase configuration. Please verify: 1) API Key is correct, 2) Project ID matches your Firebase project, 3) App ID is correct.';
+        errorMessage = 'Invalid Firebase configuration.';
+        setErrorQuickFix('Please verify: \n' +
+          '1) API Key is correct, \n' +
+          '2) Project ID matches your Firebase project, \n' +
+          '3) App ID is correct.'
+        );
       } else {
         errorMessage += err.message || 'Please check your Firebase configuration and try again.';
       }
-
+      console.log('Err: ', err);
       setError(errorMessage);
-      return null;
     } finally {
       setTesting(false);
     }
   };
 
-  const handleTestFromEnv = async () => {
-    if (!hasEnvConfig) {
-      setError('Not found .env configuration file.');
-      return;
-    }
+  const handleSecretSubmit = (e) => {
+    e.preventDefault();
+    const secret = inputSecretRef.current.value;
+    sessionStorage.setItem('scrt', secret);
+    runConfigValidation(secret);
+  }
 
-    const firestoreDb = await testConfiguration(envConfig);
-    if (firestoreDb) {
-      // Launch immediately after success
-      setTimeout(() => onSuccess(firestoreDb, envConfig), 500);
-    }
-  };
+  useEffect(()=>{
+    
+  }, [db]);
 
-  useEffect(() => {
-    handleTestFromEnv();
+  useEffect(()=> {
+    addTestResult(healthCheckType.CONFIG, 'Verify Firebase Config', '', 'Check Firebase Config');
+    addTestResult(healthCheckType.WRITE, 'Write Test', '', 'Check firebase write');
+    addTestResult(healthCheckType.READ, 'Read Test', '', 'Check firebase read', true);
+    addTestResult(healthCheckType.DELETE, 'Delete Test', '', 'Check firebase delete', true);
+    const secret = sessionStorage.getItem('scrt');
+    if(secret) {
+      runConfigValidation(secret);
+    }
   }, [])
 
   return (
     <div className="connection-test">
-      <div className="connection-test-container">
+      <div className="container">
         <h1>Perform Health Check</h1>
+        <form onSubmit={handleSecretSubmit} 
+          className="secret-input"
+        >
+          <input
+            type="text"
+            placeholder="Enter Secret"
+            ref={inputSecretRef}
+            autoFocus={true}
+          />
+          <button type="submit">Health Check</button>
+        </form>
+
+        {error && (
+          <div className="error-message">
+            <h3>❌ Health Check Failed</h3>
+            <p>{error}</p>
+            <p className="error-help">
+              <div style={{ whiteSpace: "pre-wrap", tabSize: 2 }}>{errorQuickFix}</div>
+              See <strong>TROUBLESHOOTING.md</strong> for detailed solutions.
+            </p>
+          </div>
+        )}
 
         {(!testing || !error) && (
           <div className="test-progress">
-            <h3>Running Tests...</h3>
+            <h3>Checks</h3>
             <div className="test-results">
               {testResults.map((result, index) => (
                 <div key={index} className={`test-result test-result-${result.status}`}>
@@ -155,17 +209,6 @@ export default function HealthCheck({ onSuccess }) {
             </div>
           </div>
         )}
-
-        {error && (
-          <div className="error-message">
-            <h3>❌ Configuration Error</h3>
-            <p>{error}</p>
-            <p className="error-help">
-              See <strong>TROUBLESHOOTING.md</strong> for detailed solutions.
-            </p>
-          </div>
-        )}
-
       </div>
     </div>
   );
