@@ -1,0 +1,9 @@
+#date-section {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 30px;
+  padding: 4px;
+  background: #f8f9fa;
+  border-radius: 10px;
+  border: 2px solid #e9ecef;
+}

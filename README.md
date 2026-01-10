@@ -7,6 +7,7 @@ A React web application that connects directly to Firebase Firestore - no backen
 ### Quick Start
 
 1. **Install dependencies:**
+
 ```bash
 npm install
 ```
@@ -18,13 +19,14 @@ npm install
    - Get your Firebase config from Project Settings
 
 3. **Run the app:**
+
 ```bash
 npm start
 ```
 
 4. **Enter your Firebase config** in the app:
    - API Key
-   - Project ID  
+   - Project ID
    - App ID
    - (Others are optional)
 

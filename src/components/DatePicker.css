@@ -1,10 +1,10 @@
 #date-picker {
-    display: flex;
-    align-items: center;
-    gap: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
-.date-label {
+#date-label {
   display: block;
   font-weight: 600;
   color: #555;
@@ -32,7 +32,8 @@
     flex-direction: column;
     gap: 0;
   }
-  .date-label {
+
+  #date-label {
     padding-left: 5px;
   }
 }

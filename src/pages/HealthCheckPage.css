@@ -1,3 +1,11 @@
+#health-check {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 10px 20px black;
+}
+
 .secret-input {
   padding: 12px;
   border: 2px solid #ddd;
@@ -7,9 +15,10 @@
   display: flex;
   justify-content: space-between;
   gap: 1rem;
-  button, input {
+  button,
+  input {
     flex-grow: 1;
-    background:#c3e6cb;
+    background: #c3e6cb;
     border: 1px solid #6789;
     border-radius: 4px;
     padding: 5px 10px;
@@ -19,17 +28,9 @@
     font-weight: 600;
   }
   input {
-    background:#6661;
+    background: #6661;
     border: 1px solid #6665;
   }
-}
-
-.connection-test {
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  box-shadow: 0 10px 20px black;
 }
 
 .subtitle {
@@ -196,11 +197,13 @@
   }
 }
 
-.error-help {
+#quick-fix {
   margin-top: 15px;
   font-size: 14px;
   font-style: italic;
   color: #856404;
+  white-space: pre-wrap;
+  tab-size: 2;
 }
 
 .btn {
@@ -244,4 +247,3 @@
     font-size: 1.8rem;
   }
 }
-
