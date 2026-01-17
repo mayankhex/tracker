@@ -1,21 +1,21 @@
 import { initializeApp } from 'firebase/app';
 import { initializeFirestore, persistentLocalCache } from 'firebase/firestore';
 import CryptoJS from 'crypto-js';
-import { DEBUG } from './constants';
+import { DEBUG, REACT_APP_FIREBASE_CONFIG } from './constants';
 
 function decryptConfig(secret) {
-	const config = process.env.REACT_APP_FIREBASE_CONFIG;
-	if(!config) throw new Error('Missing Firebase Config');
-	let rawConfig = CryptoJS.AES.decrypt(config, secret).toString(CryptoJS.enc.Utf8);
-	rawConfig = rawConfig ? JSON.parse(rawConfig) : null;
-	if(DEBUG) console.log('Config: ', rawConfig);
-	return rawConfig;
+  const config = REACT_APP_FIREBASE_CONFIG;
+  if (!config) throw new Error('Missing Firebase Config');
+  let rawConfig = CryptoJS.AES.decrypt(config, secret).toString(CryptoJS.enc.Utf8);
+  rawConfig = rawConfig ? JSON.parse(rawConfig) : null;
+  if (DEBUG) console.log('Config: ', rawConfig);
+  return rawConfig;
 }
 
 // Get Firebase config from environment variables
 export function getFirebaseConfig(secret) {
-	return decryptConfig(secret);
-};
+  return decryptConfig(secret);
+}
 
 // Initialize Firebase instances
 let app = null;
