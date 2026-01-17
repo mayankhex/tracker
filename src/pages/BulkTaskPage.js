@@ -14,8 +14,14 @@ export default function BulkTask() {
     <div className="tasks-section">
       <h2>Bulk Tasks</h2>
       <DateSection>
-        <DatePicker label="Start Date" date={startDate} setDate={setStartDate} />
-        <DatePicker label="End Date" date={endDate} setDate={setEndDate} />
+        <DatePicker label="Start Date" date={startDate} setDate={setStartDate} max={endDate} />
+        <DatePicker
+          label="End Date"
+          date={endDate}
+          setDate={setEndDate}
+          min={startDate}
+          max={getTodayDateString(new Date(new Date().setFullYear(new Date().getFullYear() + 1)))}
+        />
       </DateSection>
       <AddTasks tasks={tasks} setTasks={setTasks} startDate={startDate} endDate={endDate} />
 
