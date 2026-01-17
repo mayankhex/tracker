@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { getTodayDateString } from '../utils';
 import './DatePicker.css';
 
