@@ -3,28 +3,18 @@ import { initializeFirestore, persistentLocalCache } from 'firebase/firestore';
 import CryptoJS from 'crypto-js';
 import { DEBUG } from './constants';
 
-const encryptedConfig = {
-  apiKey: 'U2FsdGVkX197kPyyOC87+9/XblYmm6TSdYrzUxkHqf3M6Hq71laAeeS/ihqur6sEef1v0FVeO16HYshFcC0sfw==',
-  authDomain: 'U2FsdGVkX196SCs2q48CoxQPUq8V5PubVyFwQw3LYJYzG/+IRWzSxjuAUTpSrXxG',
-  projectId: 'U2FsdGVkX1+JFAfl1Xkn6jzSEZ+AfDvus7yz9h2a9eg=',
-  storageBucket: 'U2FsdGVkX1/G6xFg03ev6mEBJETsqHd6JLZy1bOCk9iFG5VxFp9kQOf4BuwN6W7GvLJmmsE27jTZMLZv3gyjig==',
-  messagingSenderId: 'U2FsdGVkX18aEacQkZms0hiL859bnxniTWDRBKLqnxE=',
-  appId: 'U2FsdGVkX18XSLPoqE4r7Z4Nqi3fJgxYDBPCjr/YetTihP7VnsxGno70GB/PFN8PX3KhQiCUaMdhr1ECoqPTUg==',
-  measurementId: 'U2FsdGVkX19X0Gl48g7yTfpsmp959gzzMY2mlds/SDU=',
-};
-
-function decryptConfig(config, secret) {
-  const oldConfig = Object.entries(config).reduce((acc, [key, value]) => {
-    acc[key] = CryptoJS.AES.decrypt(value, secret).toString(CryptoJS.enc.Utf8);
-    return acc;
-  }, {});
-  if (DEBUG) console.log(oldConfig);
-  return oldConfig;
+function decryptConfig(secret) {
+	const config = process.env.REACT_APP_FIREBASE_CONFIG;
+	if(!config) throw new Error('Missing Firebase Config');
+	let rawConfig = CryptoJS.AES.decrypt(config, secret).toString(CryptoJS.enc.Utf8);
+	rawConfig = rawConfig ? JSON.parse(rawConfig) : null;
+	if(DEBUG) console.log('Config: ', rawConfig);
+	return rawConfig;
 }
 
 // Get Firebase config from environment variables
-export const getFirebaseConfig = (secret) => {
-  return decryptConfig(encryptedConfig, secret);
+export function getFirebaseConfig(secret) {
+	return decryptConfig(secret);
 };
 
 // Initialize Firebase instances
@@ -43,7 +33,7 @@ export const initFirebase = async (secret) => {
     }
 
     const config = getFirebaseConfig(secret);
-    if (config && config.apiKey === '' && config.apiKey === encryptedConfig.apiKey) {
+    if (!config) {
       throw new Error('Invalid or Malformed Firebase secret');
     }
 

@@ -21,6 +21,7 @@ jobs:
       - name: Install dependencies
         env:
           REACT_APP_ENV: prod
+          REACT_APP_FIREBASE_CONFIG: ${{ secrets.REACT_APP_FIREBASE_CONFIG }}
         run: npm install
 
       - name: Build the React app
